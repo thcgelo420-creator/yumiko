@@ -205,22 +205,18 @@ kbd {
   #detail { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; }
   #hints { display: none; }
 }
-/* A short screen, such as a phone on its side: the sheet may use nearly the full height. */
+/* A short screen, such as a phone on its side: the sheet may use nearly the full height, in one column that scrolls as a whole. */
 @media (max-height: 520px) {
-  #picker { bottom: 8px; max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); padding: 10px 14px 12px; }
+  #picker { bottom: 8px; max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); padding: 10px 14px 12px; grid-template-rows: auto; overflow: hidden auto; }
   #detail { display: block; }
   #tracks { overflow: visible; }
   #transport { flex-wrap: wrap; }
 }
-/* Short and wide: sleeves beside the tracks, and the detail column scrolls. */
+/* Short but wide enough: sleeves beside the tracks instead, and the detail column is what scrolls. */
 @media (max-height: 520px) and (min-width: 561px) {
-  #picker { gap: 2px 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: auto minmax(0, 1fr); }
+  #picker { gap: 2px 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: auto minmax(0, 1fr); overflow: visible; }
   #sleeves { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 10px 14px; overflow-x: hidden; overflow-y: auto; }
   #detail { overflow: hidden auto; border-top: 0; padding-top: 0; border-left: 1px solid var(--line); padding-left: 14px; }
-}
-/* Short and narrow: one column, and the whole sheet scrolls. */
-@media (max-height: 520px) and (max-width: 560px) {
-  #picker { grid-template-rows: auto; overflow: hidden auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   #nowplaying.spinning #np-disc { animation: none; }
