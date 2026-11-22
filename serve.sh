@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Serves the room at http://localhost:8930. There is no build step: any static file server works.
 # This one also tells the browser not to cache, so edits show up on reload.
-cd "$(dirname "$0")" && exec python3 - "${PORT:-8930}" <<'PY'
+# It listens on this machine only; set HOST=0.0.0.0 to let other devices on the network in.
+cd "$(dirname "$0")" && exec python3 - "${PORT:-8930}" "${HOST:-127.0.0.1}" <<'PY'
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -12,7 +13,7 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-port = int(sys.argv[1])
+port, host = int(sys.argv[1]), sys.argv[2]
 print(f'yumiko: http://localhost:{port}')
-ThreadingHTTPServer(('', port), Handler).serve_forever()
+ThreadingHTTPServer((host, port), Handler).serve_forever()
 PY
