@@ -372,7 +372,10 @@ window.addEventListener('keydown', (e) => {
     case 'KeyR': app.mode === 'picker' ? closePicker() : openPicker(); e.preventDefault(); break;
     // Tab opens the crate too, but inside it Tab belongs to the browser: it moves between sleeves, tracks and buttons.
     case 'Tab': if (app.mode === 'room') { openPicker(); e.preventDefault(); } break;
-    case 'Space': togglePlay(); e.preventDefault(); break;
+    case 'Space':
+      // On a focused crate control, Space presses that control, as it does on any button.
+      if (app.mode === 'picker' && e.target instanceof HTMLElement && e.target.closest('#picker button, #picker label')) break;
+      togglePlay(); e.preventDefault(); break;
     case 'KeyN': advance(1); break;
     case 'KeyB': advance(-1); break;
     case 'KeyV': ui.toast(ui.toggleVideo() ? 'video shown' : 'video hidden'); break;
