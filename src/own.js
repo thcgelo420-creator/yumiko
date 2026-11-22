@@ -16,18 +16,32 @@ function openDb() {
     req.onerror = () => resolve(null);
   });
 }
+// Resolves { ok, result }; ok is false when the browser has no IndexedDB or refuses the write.
 const tx = (mode, fn) => new Promise((resolve) => {
-  if (!db) return resolve(undefined);
-  const t = db.transaction('files', mode);
-  const req = fn(t.objectStore('files'));
-  t.oncomplete = () => resolve(req && req.result);
-  t.onerror = () => resolve(undefined);
+  if (!db) return resolve({ ok: false });
+  try {
+    const t = db.transaction('files', mode);
+    const req = fn(t.objectStore('files'));
+    t.oncomplete = () => resolve({ ok: true, result: req && req.result });
+    t.onerror = t.onabort = () => resolve({ ok: false });
+  } catch {
+    resolve({ ok: false });
+  }
 });
 
+// Writes the track list. Returns false if the browser would not keep it. Files that never
+// reached IndexedDB are left out, so a reload does not list tracks it cannot play.
 function save() {
-  const list = OWN_RECORD.tracks.map((t) => (t.yt ? { title: t.title, yt: t.yt } : { title: t.title, file: t.file }));
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* storage full or blocked */ }
+  const list = OWN_RECORD.tracks
+    .filter((t) => t.yt || t.file)
+    .map((t) => (t.yt ? { title: t.title, yt: t.yt } : { title: t.title, file: t.file }));
   refreshCover(OWN_RECORD);
+  try {
+    localStorage.setItem(KEY, JSON.stringify(list));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function loadOwn() {
@@ -37,7 +51,7 @@ export async function loadOwn() {
   for (const item of list) {
     if (item.yt) OWN_RECORD.tracks.push({ title: item.title, yt: item.yt });
     else if (item.file) {
-      const blob = await tx('readonly', (s) => s.get(item.file));
+      const { result: blob } = await tx('readonly', (s) => s.get(item.file));
       if (blob) OWN_RECORD.tracks.push({ title: item.title, file: item.file, src: URL.createObjectURL(blob) });
     }
   }
@@ -57,7 +71,7 @@ export async function addYouTube(id) {
   }
   const track = { title, yt: id };
   OWN_RECORD.tracks.push(track);
-  save();
+  track.kept = save();
   return track;
 }
 
@@ -66,12 +80,13 @@ export async function addFiles(files) {
   for (const file of files) {
     if (!file.type.startsWith('audio/') && !/\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|webm)$/i.test(file.name)) continue;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await tx('readwrite', (s) => s.put(file, id));
-    const track = { title: file.name.replace(/\.[^.]+$/, ''), file: id, src: URL.createObjectURL(file) };
+    const { ok } = await tx('readwrite', (s) => s.put(file, id));
+    // `kept` is false when the file only lives in this page and will be gone after a reload.
+    const track = { title: file.name.replace(/\.[^.]+$/, ''), file: ok ? id : null, src: URL.createObjectURL(file), kept: ok };
     OWN_RECORD.tracks.push(track);
     added.push(track);
   }
-  if (added.length) save();
+  if (added.length && !save()) for (const t of added) t.kept = false;
   return added;
 }
 

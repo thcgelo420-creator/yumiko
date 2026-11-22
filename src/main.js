@@ -495,7 +495,7 @@ Object.assign(handlers, {
     if (!id) { ui.toast('that does not look like a YouTube link'); return false; }
     try {
       const track = await addYouTube(id);
-      ui.toast(track ? `pressed: ${track.title}` : 'that one is already on your record');
+      ui.toast(!track ? 'that one is already on your record' : track.kept ? `pressed: ${track.title}` : `pressed for this visit only (this browser would not save it): ${track.title}`, track && !track.kept ? 6000 : undefined);
       ui.refreshOwn();
       return true;
     } catch (err) {
@@ -506,7 +506,9 @@ Object.assign(handlers, {
   async onAddFiles(files) {
     const added = await addFiles(Array.from(files));
     if (!added.length) { ui.toast('those were not audio files'); return; }
-    ui.toast(added.length === 1 ? `pressed: ${added[0].title}` : `pressed ${added.length} tracks onto your record`);
+    const what = added.length === 1 ? added[0].title : `${added.length} tracks`;
+    if (added.every((t) => t.kept)) ui.toast(`pressed: ${what}`);
+    else ui.toast(`pressed for this visit only (this browser would not save them): ${what}`, 6000);
     if (app.mode === 'room') openPicker(OWN_RECORD); else if (app.mode === 'picker') ui.openPicker(OWN_RECORD);
     ui.refreshOwn();
   },
