@@ -66,10 +66,12 @@ or drop audio files anywhere on the page. Those are stored in that browser only
 | `src/outside.js` | sky, city, traffic and falling rain, drawn to a texture |
 | `src/glass.js` | the window shader: looks that texture up through mist and water drops |
 | `src/turntable.js` | the deck and its arm, platter and record animations |
-| `src/audio.js` | synthesised rain, crackle and thunder; the YouTube / file player |
+| `src/audio.js` | rain, crackle and thunder; the YouTube / file player |
+| `audio/rain.mp3` | the rain loop, made by `tools/build-rain.py` |
 | `src/player.js` | walking, collisions, and the lie / sit poses |
 | `src/ui.js`, `css/style.css` | menu, prompts, now-playing card, crate sheet |
 | `src/textures.js` | every texture, painted on canvases at load |
 
-Rain, thunder and vinyl crackle are generated in the browser; no audio or image files ship
-with the site.
+Thunder and vinyl crackle are generated in the browser. The rain is a field recording,
+[Light Rain Distant Thunder July 5th 2016](https://commons.wikimedia.org/wiki/File:Light_Rain_Distant_Thunder_July_5th_2016.wav)
+by kvgarlic, released under CC0. No music or image files ship with the site.

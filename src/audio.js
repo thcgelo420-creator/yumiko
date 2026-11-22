@@ -1,43 +1,39 @@
 import { rng } from './util.js';
 
-// --- Room tone: rain, record crackle, thunder. All synthesised, nothing to download. -------
+// --- Room tone: rain, record crackle, thunder. The rain is a recording; the rest is synthesised. ---
+
+const RAIN_URL = new URL('../audio/rain.mp3', import.meta.url);
+// At the default rain setting, away from the glass, the rain sits about 20 dB under a record.
+const RAIN_GAIN = 1.2;
+
+// Folds the end of a recording over its start so it loops without a seam. The margin skips encoder padding.
+function seamless(ctx, src, fade = 1.5, margin = 0.15) {
+  const sr = src.sampleRate, m = Math.floor(margin * sr), f = Math.floor(fade * sr);
+  const n = src.length - 2 * m - f;
+  if (n <= f) return src;
+  const out = ctx.createBuffer(src.numberOfChannels, n, sr);
+  for (let ch = 0; ch < src.numberOfChannels; ch++) {
+    const s = src.getChannelData(ch), d = out.getChannelData(ch);
+    d.set(s.subarray(m, m + n));
+    for (let i = 0; i < f; i++) {
+      const k = (i / f) * Math.PI / 2;
+      d[i] = s[m + i] * Math.sin(k) + s[m + n + i] * Math.cos(k);
+    }
+  }
+  return out;
+}
 
 export function createAmbience() {
-  let ctx = null, rainGain, crackleGain, master, rainBuf, crackleBuf, crackleSrc = null;
-  let rainLevel = 0.55, muffle, crackleOn = false;
+  let ctx = null, rainGain, crackleGain, master, crackleBuf, crackleSrc = null;
+  let rainLevel = 0.55, nearGlass = 0, raining = false, muffle, crackleOn = false;
+  const rainFile = fetch(RAIN_URL).then((res) => (res.ok ? res.arrayBuffer() : null)).catch(() => null);
 
-  function noiseBuffers() {
+  // The slider is squared so its lower half is usable; nearer the glass the rain is louder.
+  const rainTarget = () => (raining ? rainLevel * rainLevel * (0.7 + nearGlass * 0.45) * RAIN_GAIN : 0);
+
+  function crackleBuffer() {
     const sr = ctx.sampleRate;
-    // Rain: pink-ish hiss, plus thousands of tiny ticks for drops hitting the pane.
-    const len = Math.floor(sr * 9);
-    rainBuf = ctx.createBuffer(2, len, sr);
     const r = rng(5150);
-    for (let ch = 0; ch < 2; ch++) {
-      const d = rainBuf.getChannelData(ch);
-      let b0 = 0, b1 = 0, b2 = 0;
-      for (let i = 0; i < len; i++) {
-        const w = r() * 2 - 1;
-        b0 = 0.99765 * b0 + w * 0.099046;
-        b1 = 0.963 * b1 + w * 0.2965164;
-        b2 = 0.57 * b2 + w * 1.0526913;
-        d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.11;
-      }
-      const ticks = 5200;
-      for (let k = 0; k < ticks; k++) {
-        const at = Math.floor(r() * (len - 900));
-        const amp = Math.pow(r(), 3) * 0.5;
-        const decay = 60 + r() * 500;
-        const tone = 0.15 + r() * 0.6;
-        let ph = 0;
-        for (let i = 0; i < 800; i++) {
-          ph += tone;
-          d[at + i] += Math.sin(ph) * Math.exp(-i / decay) * amp * (r() * 0.6 + 0.4);
-        }
-      }
-      // Fade the loop point so it does not click.
-      const f = Math.floor(sr * 0.05);
-      for (let i = 0; i < f; i++) { const k = i / f; d[i] *= k; d[len - 1 - i] *= k; }
-    }
     // Crackle: a quiet bed of surface noise with sparse pops.
     const clen = Math.floor(sr * 5);
     crackleBuf = ctx.createBuffer(1, clen, sr);
@@ -61,38 +57,53 @@ export function createAmbience() {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       ctx = new AC();
-      noiseBuffers();
+      crackleBuffer();
       master = ctx.createGain();
       master.connect(ctx.destination);
       // The glass takes the top off the rain.
       muffle = ctx.createBiquadFilter();
       muffle.type = 'lowpass';
-      muffle.frequency.value = 2600;
-      muffle.Q.value = 0.3;
+      muffle.frequency.value = 4500;
+      muffle.Q.value = -3;
       const body = ctx.createBiquadFilter();
       body.type = 'highpass';
-      body.frequency.value = 140;
+      body.frequency.value = 400;
       rainGain = ctx.createGain();
       rainGain.gain.value = 0;
-      const src = ctx.createBufferSource();
-      src.buffer = rainBuf;
-      src.loop = true;
-      src.connect(body).connect(muffle).connect(rainGain).connect(master);
-      src.start();
-      rainGain.gain.linearRampToValueAtTime(rainLevel * 0.9, ctx.currentTime + 3);
+      body.connect(muffle).connect(rainGain).connect(master);
+      rainFile
+        .then((bytes) => bytes && new Promise((ok, no) => ctx.decodeAudioData(bytes, ok, no)))
+        .then((recording) => {
+          if (!recording) return;
+          // Two layers of the one loop, the second slower, deeper and quieter, so the pattern does not come round.
+          const loop = seamless(ctx, recording);
+          for (const [rate, offset, level] of [[1, 0, 1], [0.83, 9, 0.45]]) {
+            const src = ctx.createBufferSource(), layer = ctx.createGain();
+            src.buffer = loop;
+            src.loop = true;
+            src.playbackRate.value = rate;
+            layer.gain.value = level;
+            src.connect(layer).connect(body);
+            src.start(0, offset);
+          }
+          raining = true;
+          rainGain.gain.setTargetAtTime(rainTarget(), ctx.currentTime, 1);
+        })
+        .catch(() => { /* no rain sound; the room still works */ });
       crackleGain = ctx.createGain();
       crackleGain.gain.value = 0;
       crackleGain.connect(master);
     },
     setRain(v) {
       rainLevel = v;
-      if (ctx) rainGain.gain.setTargetAtTime(v * 0.9, ctx.currentTime, 0.2);
+      if (ctx) rainGain.gain.setTargetAtTime(rainTarget(), ctx.currentTime, 0.2);
     },
     // Nearer the glass the rain is louder and brighter.
     setNearGlass(k) {
+      nearGlass = k;
       if (!ctx) return;
-      muffle.frequency.setTargetAtTime(2200 + k * 2600, ctx.currentTime, 0.4);
-      rainGain.gain.setTargetAtTime(rainLevel * (0.7 + k * 0.45), ctx.currentTime, 0.4);
+      muffle.frequency.setTargetAtTime(4500 + k * 3000, ctx.currentTime, 0.4);
+      rainGain.gain.setTargetAtTime(rainTarget(), ctx.currentTime, 0.4);
     },
     crackle(on, level = 0.5) {
       if (!ctx) return;
@@ -137,7 +148,7 @@ export function createAmbience() {
       src.buffer = buf;
       lp.type = 'lowpass';
       lp.frequency.value = 180;
-      g.gain.value = strength * rainLevel * 2.2;
+      g.gain.value = strength * rainLevel * rainLevel * 1.6;
       src.connect(lp).connect(g).connect(master);
       src.start();
     },
