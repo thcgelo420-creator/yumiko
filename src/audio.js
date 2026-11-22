@@ -232,6 +232,8 @@ export class Jukebox extends EventTarget {
   cue(record, index) {
     this.token++;
     this.#silence();
+    // The give-up count is per record: an earlier record's dead tracks must not count against this one.
+    if (record !== this.record) this.failures = 0;
     this.record = record;
     this.index = index;
     this.kind = null;
