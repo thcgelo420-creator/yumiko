@@ -109,6 +109,7 @@ kbd {
   animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 @keyframes rise { from { transform: translate(-50%, 24px); opacity: 0; } }
+#picker:focus { outline: none; }
 #picker header { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; }
 #picker h2 { margin: 0; font: italic 400 22px var(--serif); letter-spacing: 0.01em; }
 #picker-close { border: 0; background: none; color: var(--dim); font-size: 13px; padding: 6px 0; }

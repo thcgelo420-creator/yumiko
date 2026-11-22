@@ -180,8 +180,9 @@ export function createUI(handlers) {
     openPicker(record) {
       el.picker.hidden = false;
       select(record || now.record || selected);
-      sleeveButtons.get(selected.id).focus({ preventScroll: true });
+      // Focus the sheet, not a control: Space keeps meaning play / pause until Tab picks a control.
       if (selected.own && !selected.tracks.length) el.ownUrl.focus({ preventScroll: true });
+      else el.picker.focus({ preventScroll: true });
     },
     closePicker() { el.picker.hidden = true; },
     get pickerOpen() { return !el.picker.hidden; },
