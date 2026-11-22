@@ -365,7 +365,9 @@ window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
   switch (e.code) {
     case 'KeyE': case 'KeyF': if (app.mode === 'room') use(); break;
-    case 'KeyR': case 'Tab': app.mode === 'picker' ? closePicker() : openPicker(); e.preventDefault(); break;
+    case 'KeyR': app.mode === 'picker' ? closePicker() : openPicker(); e.preventDefault(); break;
+    // Tab opens the crate too, but inside it Tab belongs to the browser: it moves between sleeves, tracks and buttons.
+    case 'Tab': if (app.mode === 'room') { openPicker(); e.preventDefault(); } break;
     case 'Space': togglePlay(); e.preventDefault(); break;
     case 'KeyN': advance(1); break;
     case 'KeyB': advance(-1); break;
