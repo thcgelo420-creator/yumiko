@@ -138,8 +138,10 @@ function resize() {
   composer.setPixelRatio(pr);
   composer.setSize(w, h);
   const samples = prefs.lowq ? 0 : 4;
-  composer.renderTarget1.samples = samples;
-  composer.renderTarget2.samples = samples;
+  if (composer.renderTarget1.samples !== samples) {
+    // A live target keeps the buffers it was built with; drop them so the new sample count takes.
+    for (const rt of [composer.renderTarget1, composer.renderTarget2]) { rt.dispose(); rt.samples = samples; }
+  }
   const bw = Math.floor(w * pr), bh = Math.floor(h * pr);
   const k = prefs.lowq ? 0.4 : 0.5;
   outsideRT.setSize(Math.max(2, Math.floor(bw * k)), Math.max(2, Math.floor(bh * k)));
