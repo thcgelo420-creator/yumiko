@@ -483,7 +483,7 @@ Object.assign(handlers, {
   onStop: stopRecord,
   onClosePicker: () => closePicker(),
   onPrefs(p, key) {
-    if (key === 'music') jukebox.setVolume(p.music / 100);
+    if (key === 'music') { jukebox.setVolume(p.music / 100); ambience.setCrackleLevel(p.music / 100); }
     if (key === 'rain') ambience.setRain(p.rain / 100);
     if (key === 'sens') player.sensitivity = p.sens / 100;
     if (key === 'lowq') resize();

@@ -4,7 +4,7 @@ import { rng } from './util.js';
 
 export function createAmbience() {
   let ctx = null, rainGain, crackleGain, master, rainBuf, crackleBuf, crackleSrc = null;
-  let rainLevel = 0.55, muffle;
+  let rainLevel = 0.55, muffle, crackleOn = false;
 
   function noiseBuffers() {
     const sr = ctx.sampleRate;
@@ -103,7 +103,12 @@ export function createAmbience() {
         crackleSrc.connect(crackleGain);
         crackleSrc.start();
       }
+      crackleOn = on;
       crackleGain.gain.setTargetAtTime(on ? level * 0.22 : 0, ctx.currentTime, on ? 0.05 : 0.4);
+    },
+    // Follow the music volume while a record is already crackling.
+    setCrackleLevel(level) {
+      if (ctx && crackleOn) crackleGain.gain.setTargetAtTime(level * 0.22, ctx.currentTime, 0.05);
     },
     // The soft thump of a stylus landing.
     needleDrop(level = 0.5) {
