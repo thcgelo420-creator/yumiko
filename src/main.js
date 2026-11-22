@@ -367,7 +367,8 @@ window.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   player.keys.add(e.code);
   // Matched by character, not position, so the keys printed - and + work on any layout. Holding one keeps going.
-  const louder = { '-': -5, '_': -5, '+': 5, '=': 5 }[e.key];
+  // Letter positions are left alone: they walk and use things whatever a layout prints on them.
+  const louder = !e.code.startsWith('Key') && { '-': -5, '_': -5, '+': 5, '=': 5 }[e.key];
   if (louder) {
     const level = ui.nudge('s-rain', 'rain', louder);
     ui.toast(level ? `rain ${level}%` : 'rain off', 1400);
