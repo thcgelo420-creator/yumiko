@@ -92,9 +92,7 @@ export async function addFiles(files) {
 
 export async function removeOwn(index) {
   const [t] = OWN_RECORD.tracks.splice(index, 1);
-  if (t && t.file) {
-    URL.revokeObjectURL(t.src);
-    await tx('readwrite', (s) => s.delete(t.file));
-  }
+  if (t && t.src) URL.revokeObjectURL(t.src);
+  if (t && t.file) await tx('readwrite', (s) => s.delete(t.file));
   save();
 }

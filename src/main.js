@@ -46,8 +46,13 @@ const tweens = new Tweens();
 
 // The city is rendered to this texture at reduced size; its mip chain is the window's blur.
 const outside = createOutside();
+// Half-float buffers keep the dark end of the picture smooth, but a few WebGL 2 devices cannot
+// render to them. Those get 8-bit buffers and no bloom: coarser, but a picture rather than none.
+const gl = renderer.getContext();
+const hdr = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+const bufferType = hdr ? THREE.HalfFloatType : THREE.UnsignedByteType;
 const outsideRT = new THREE.WebGLRenderTarget(4, 4, {
-  type: THREE.HalfFloatType, generateMipmaps: true,
+  type: bufferType, generateMipmaps: true,
   minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, depthBuffer: true,
 });
 const glass = createGlassMaterial(outsideRT.texture);
@@ -103,10 +108,9 @@ scene.add(fillN, fillW, street, deskFill);
 const BASE = { hemi: hemi.intensity, sky: sky.intensity, fillN: fillN.intensity, fillW: fillW.intensity };
 
 // ---- Post: bloom for the city and screens, then a grade (vignette, grain, cool shadows). ----
-const composer = new EffectComposer(renderer);
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(4, 4, { type: bufferType }));
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.75, 0.9);
-composer.addPass(bloom);
+if (hdr) composer.addPass(new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.75, 0.9));
 const grade = new ShaderPass({
   uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uDim: { value: 0 } },
   vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
