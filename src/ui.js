@@ -141,11 +141,14 @@ export function createUI(handlers) {
     loading(text) { el.enter.disabled = true; el.load.textContent = text; },
     fail(text) { el.enter.hidden = true; el.load.textContent = text; },
     showMenu(paused) {
+      el.menu.inert = false;
       el.menu.classList.remove('gone');
       el.menu.classList.toggle('paused', paused);
       if (paused) { el.enter.textContent = 'back to the room'; el.load.textContent = ''; }
     },
     hideMenu() {
+      // Faded out is not gone: without this, Tab could still land on its button.
+      el.menu.inert = true;
       el.menu.classList.add('gone');
       el.hud.hidden = false;
       clearTimeout(hintTimer);
