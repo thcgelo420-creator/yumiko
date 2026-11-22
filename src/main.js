@@ -366,6 +366,13 @@ window.addEventListener('keydown', (e) => {
   if (app.mode === 'menu') { if (e.code === 'Enter' && !ui.el.enter.disabled) enter(); return; }
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   player.keys.add(e.code);
+  // Matched by character, not position, so the keys printed - and + work on any layout. Holding one keeps going.
+  const louder = { '-': -5, '_': -5, '+': 5, '=': 5 }[e.key];
+  if (louder) {
+    const level = ui.nudge('s-rain', 'rain', louder);
+    ui.toast(level ? `rain ${level}%` : 'rain off', 1400);
+    return;
+  }
   if (e.repeat) return;
   switch (e.code) {
     case 'KeyE': case 'KeyF': if (app.mode === 'room') use(); break;

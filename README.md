@@ -27,6 +27,7 @@ Any static file server works (`python3 -m http.server`, GitHub Pages, Netlify, â
 | `N` / `B` | next / previous track |
 | `V` | show or hide the video in the now-playing card |
 | `L` | lamp |
+| `-` / `+` | rain quieter / louder |
 | `Esc` | menu (volumes, look speed, thunder, lighter graphics) |
 
 On a phone: the left pad walks, dragging looks, tapping uses.

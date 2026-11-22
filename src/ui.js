@@ -171,6 +171,13 @@ export function createUI(handlers) {
       el.hud.classList.toggle('picking', !!picking);
       el.hud.classList.toggle('free', !!free);
     },
+    // Moves a slider setting by `by`, as if the slider had been dragged. Returns the new value.
+    nudge(id, key, by) {
+      const input = $(id);
+      input.value = Number(input.value) + by;
+      input.dispatchEvent(new Event('input'));
+      return prefs[key];
+    },
     toast(text, ms = 3600) {
       el.toast.textContent = text;
       el.toast.classList.add('show');
